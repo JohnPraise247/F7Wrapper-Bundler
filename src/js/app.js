@@ -1,5 +1,6 @@
 const f7wb = {
     serviceStarted:false,
+    nodeReady:false,
     domAppList: "",
     appNum: 0,
     exportPath: app.LoadText("exportPath", "/sdcard/Droidscript/F7Wrapper_Export", "f7WBundler"),
