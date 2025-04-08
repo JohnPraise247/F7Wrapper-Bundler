@@ -17,7 +17,6 @@ class App {
     }
 
     onInit() {
-        //      app.SetNavBarColor( this.clr )
         f7.setBackColor(this.clr);
         f7.disableTextSelection();
         f7.disableDrag()
@@ -26,16 +25,16 @@ class App {
     onStart() {
         f7.enableDarkMode(this.isDark);
 
-        f7.style("app.css");
-        f7.script("app.js");
+        f7.style("css/app.css");
+        f7.script("js/app.js");
 
         //add pages
-        f7.addPage("splash.html", null, true);
-        f7.addPage("home.html");
-        f7.addPage("settings.html");
-        f7.addPage("bundle.html");
+        f7.addPage("pages/splash.html", null, true);
+        f7.addPage("pages/home.html");
+        f7.addPage("pages/settings.html");
+        f7.addPage("pages/bundle.html");
 
-        this.svc = app.CreateService("this", "this");
+        this.svc = app.CreateService("this", "this",()=> f7.execute('f7wb.serviceStarted=true'));
         this.svc.SetOnMessage(this.OnServiceMessage);
     }
 
@@ -45,8 +44,11 @@ class App {
         let res = data[1];
 
         switch(cmd) {
-            case "ctxid: main":
+            case "ctxid: main": 
                 f7.toast("Ready", 800)
+                break;
+            case "nodeReady":
+                f7.execute('f7wb.nodeReady = true');
                 break;
             case "getDirSize":
                 f7.execute('$$("#txtS").text(formatSize( ' + res + ' ))')
@@ -56,16 +58,10 @@ class App {
                 f7.execute("f7wb.exportPath", (path) => f7.toast(`Exported to '${path}'`))
                 break;
             case "error":
-                f7.execute(`
-                 $$("#errLog").append("<div class=text-color-red>> ${res}</div>");
-                 $$("#errLog").scrollTop($$("#errLog")[0].scrollHeight, 500);
-`               );
+                f7.execute(`$$("#log").append("<div class=text-color-red>> ${res}</div>");$$("#log").scrollTop($$("#log")[0].scrollHeight, 500);`);
                 break;
             default:
-                f7.execute(`
-                 $$("#errLog").append("<div>> ${msg}</div>");
-                 $$("#errLog").scrollTop($$("#errLog")[0].scrollHeight, 500);
-`               );
+                f7.execute(`$$("#log").append("<div>> ${msg}</div>");$$("#log").scrollTop($$("#log")[0].scrollHeight, 500);`);
             //   alert(msg);
         }
     }
@@ -76,7 +72,7 @@ class App {
 
     onPause() {
         if(this.svc) {
-            this.svc.Stop();
+            this.svc.Stop();//To prevent service from running in the background when the app isnt active or when app has been closed, we call this.svc.Stop()
             this.svc = null;
             f7.execute("f7wb.isBundling", (isBundling) => {
                 if(isBundling) {
@@ -90,8 +86,8 @@ class App {
     }
 
     onResume() {
-        if(!this.svc) {
-            this.svc = app.CreateService("this", "this", this.OnServiceReady);
+        if(!this.svc) {//Restart service, on app resume
+            this.svc = app.CreateService("this", "this");
             this.svc.SetOnMessage(this.OnServiceMessage);
             //   app.ShowPopup( "Service started" )
         }
@@ -107,9 +103,7 @@ class App {
                     this.svc.Stop()
                     app.Exit();
                 }
-                setTimeout(() => {
-                    this.quit = 0
-                }, 2000);
+                setTimeout(() => this.quit = 0, 2000);
             } else if(path.startsWith("/bundle")) {
                 f7.execute("f7wb.isBundling", (isBundling) => !isBundling ? f7.back() : f7.toast("Bundling in progress"))
             } else {
@@ -117,4 +111,4 @@ class App {
             }
         }
     }
-  }
+}
