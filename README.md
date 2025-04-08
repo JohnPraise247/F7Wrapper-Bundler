@@ -25,7 +25,7 @@ The `.bundleignore` file functions similarly to `.gitignore`, allowing you to ex
 
 1. Create a `.bundleignore` file in your app’s root directory.
 2. Add file or folder patterns you wish to exclude:
-   ```bash
+   ```txt
    # Example .bundleignore
    secret.js
    assets/*
