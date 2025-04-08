@@ -1,0 +1,37 @@
+<div class="page" data-name="home">
+    <div class="navbar navbar-large">
+        <div class="navbar-bg"></div>
+        <div class="navbar-inner sliding">
+            <div class="title">F7Wrapper Apps</div>
+            <div class="title-large">
+                <div class="title-large-text">F7Wrapper Apps</div>
+            </div>
+            <div class="right">
+                <a href="/settings" class="link" data-transition="f7-parallax">
+                    <i class="md-icons">settings</i>
+                </a>
+            </div>
+        </div>
+    </div>
+    <div class="page-content">
+        <div id="homeTitle" class="block-title">No apps found.</div>
+        <div class="card overflow-hidden">
+            <div class="card-content">
+                <div class="list links-list no-safe-areas">
+                    <ul id="f7wList">
+                        <div><a onclick="app.OpenUrl('https://ds.justplayer.de/projects/mynotes')">Download Sample app</a></div>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+    $$(document).on("page:mounted", '.page[data-name="home"]', () => {
+        let appNum = f7wb.domAppList.length;
+        if(appNum > 0) {
+            $$("#homeTitle").text(f7wb.appNum + " apps")
+            $$("#f7wList").empty().append(f7wb.domAppList);
+        }
+    });
+</script>

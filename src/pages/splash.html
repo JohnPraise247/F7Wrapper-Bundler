@@ -1,0 +1,38 @@
+<div class="page no-swipe-panel" data-name="splash">
+    <div class="page-content display-flex">
+        <div class="margin-auto">
+            <img id="logo" src=" /storage/emulated/0/Android/data/com.smartphoneremote.androidscriptfree/files/DroidScript/F7Wrapper Bundler/Img/F7Wrapper Bundler.png" class="bounce" width="96" />
+        </div>
+    </div>
+</div>
+<script>
+    $$(document).on("page:mounted", '.page[data-name="splash"]', () => $$("#logo").on("error", () => $$("#logo").prop("src", app.RealPath("Img/F7Wrapper Bundler.png"))))
+    $$(document).on("page:afterin", '.page[data-name="splash"]', ()=> setTimeout(() => loadF7WApps(), 500));
+ 
+     const loadF7WApps = () => {
+        //create export folder
+        if(!app.FolderExists(f7wb.exportPath)) app.MakeFolder(f7wb.exportPath)
+        let list = ScanFolders("/sdcard/Droidscript");
+        list.forEach(({
+            name,
+            icon
+        }) => {
+            const image = icon ? app.RealPath(icon) : null;
+            f7wb.appNum++;
+            f7wb.domAppList += `
+            <li>
+                <a href="/bundle?app=${name}" data-transition="f7-parallax" class="display-flex align-items-center">
+                    ${image ? `<img src="${image}" width=24 />` : '<i class="material-icons">android</i>'}
+                    <span class="margin-left-half" style="width:100%;">${name}</span>
+                
+                </a>
+            </li>
+        `;
+        });
+        setTimeout(() => {
+            f7View.router.navigate('/home', {
+                transition: "f7-fade"
+            });
+        }, 50);
+    };
+</script>
