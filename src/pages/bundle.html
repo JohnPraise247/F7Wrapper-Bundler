@@ -1,0 +1,114 @@
+<div class="page" data-name="bundle">
+    <div class="navbar">
+        <div class="navbar-bg"></div>
+        <div class="navbar-inner sliding">
+            <a class="link back" id="bBtn">
+                <i class="icon icon-back"></i>
+            </a>
+            <div id="appName" class="title">App</div>
+        </div>
+    </div>
+    <div class="page-content">
+        <div class="block-title">Project details</div>
+        <div class="card overflow-hidden card-content-padding">
+            <div class="card-content">
+                <div class="w-full display-flex justify-content-space-between">
+                    <span>Last modified</span>
+                    <span id="txtLm" class="opacity-50"></span>
+                </div>
+                <div class="w-full display-flex justify-content-space-between">
+                    <span>Project size</span>
+                    <span id="txtS" class="opacity-50">Loading</span>
+                </div>
+            </div>
+        </div>
+        <div class="block-title">Options</div>
+        <div class="card overflow-hidden">
+            <div class="card-content">
+                <div class="list list-strong-ios list-outline-ios list-dividers-ios">
+                    <ul>
+                        <!--<li>-->
+                        <!--  <label class="item-checkbox item-checkbox-icon-end item-content">-->
+                        <!--    <input type="checkbox" name="nocomment" value="Books"  />-->
+                        <!--    <i class="icon icon-checkbox"></i>-->
+                        <!--    <div class="item-inner">-->
+                        <!--      <div class="item-title">Remove comments</div>-->
+                        <!--    </div>-->
+                        <!--  </label>-->
+                        <!--</li>-->
+                        <li>
+                            <label class="item-checkbox item-checkbox-icon-end item-content">
+                                <input type="checkbox" name="minifyOption" value="Minify" onclick="minifyO()" />
+                                <i class="icon icon-checkbox"></i>
+                                <div class="item-inner">
+                                    <div class="item-title">Minify</div>
+                                </div>
+                            </label>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        <div class="block-title">Bundler</div>
+        <div class="card">
+            <div class="card-content card-content-padding">
+                <div class="w-full display-flex justify-content-space-between">
+                    <span>Bundled size</span>
+                    <span id="txtEs" class="opacity-50">- - -</span>
+                </div>
+                <button class="button button-tonal margin-top" id="bundleBtn" onclick="startBundle()"><i class="md-icons">box</i>Bundle app</button>
+            </div>
+        </div>
+        <div class="block-title">Logs</div>
+        <div class="card overflow-hidden card-content-padding">
+            <div class="card-content" style="overflow:auto;height:100px" id="log">
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+    let appDir = null;
+    let minifyOption = app.LoadBoolean("minifyOption", true, "f7WBundler");
+    $$(document).on("page:mounted", '.page[data-name="bundle"]', (e, page) => {
+        const {
+            app: appPath
+        } = page.route.query;
+
+        const path = "/sdcard/Droidscript/" + appPath;
+        appDir = appPath;
+        $$("#appName").text(appPath)
+        $$("#txtLm").text(app.GetFileDate(path).toDateString());
+
+        //Using Node instead of app.GetFileSize( path ) to get folderSize
+        f7Func("getDirSize", appPath);
+        $$("[name=minifyOption]").prop("checked", minifyOption)
+    });
+
+    const minifyO = (n) => {
+        minifyOption = !minifyOption;
+        app.SaveBoolean("minifyOption", minifyOption, "f7WBundler");
+    }
+
+    const startBundle = () => {
+        if(f7wb.serviceStarted) {
+            if(f7wb.nodeReady) {
+                f7wb.isBundling = true;
+                let removeComments = true; //$$("[name=nocomment]").prop("checked")
+                let minify = $$("[name=minifyOption]").prop("checked")
+                $$("#bundleBtn").toggleClass("disabled")
+                $$("#bBtn").toggleClass("back disabled");
+                $$("#txtEs").text('- - -').removeClass("text-color-green");
+                //  f7Func("startBundle", JSON.stringify({appDir,exportPath:f7wb.exportPath}));
+                f7App.progressbar.show();
+                f7Func("startBundle", appDir + ";;" + f7wb.exportPath + ";;" + removeComments + ";;" + minify);
+            } else {
+                f7App.dialog.alert("The Node plugin could not be initialized. You need a premium subscription to use Node. If you are already a premium user, restarting DroidScript should resolve this issue.","Node Initialization Failed");
+            }
+        } else {
+            $$("#log").html("<div class='text-color-orange'> Unfortunately, the bundler couldn't start the Node service, which is required for the bundle to work. A possible fix is to update your <a onclick=\"app.OpenUrl('https://droidscript.org/download/' )\">DroidScript version</a>.</div>");
+            f7App.dialog.alert("Unfortunately, the bundler couldn't start the Node service, which is required for the bundle to work. A possible fix is to update your DroidScript version.", "Service Error");
+        }
+    }
+    window.startBundle = startBundle;
+    window.minifyO = minifyO;
+</script>

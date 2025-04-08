@@ -1,0 +1,129 @@
+<div class="page" data-name="settings">
+    <div class="navbar">
+        <div class="navbar-bg"></div>
+        <div class="navbar-inner sliding">
+            <a class="link back">
+                <i class="icon icon-back"></i>
+            </a>
+            <div class="title">Settings</div>
+        </div>
+    </div>
+    <div class="page-content">
+        <div class="card overflow-hidden">
+            <div class="card-content">
+                <div class="list links-list no-safe-areas">
+                    <ul>
+                        <li>
+                            <label class="item-content">
+                                <div class="item-inner">
+                                    <div class="item-title">Enable Dark mode</div>
+                                    <div class="item-after">
+                                        <div class="toggle toggle-init">
+                                            <input type="checkbox" value="darkmode" onclick="toggleDm()">
+                                            <span class="toggle-icon"></span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </label>
+                        </li>
+                        <li><a onclick="showExportDialog()" class="display-flex align-items-center justify-contenct-center">Export path</a></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        
+           <div class="card overflow-hidden">
+            <div class="card-content">
+                <div class="list links-list no-safe-areas">
+                    <ul id="f7wList">
+                        <div><a onclick="aboutDialog()">About</a></div>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+ 
+</div>
+<script>
+    let isDark = app.LoadBoolean("isDark", false, "f7WBundler");
+    const toggleDm = (n) => {
+        isDark = !isDark;
+        f7App.setDarkMode(isDark);
+        app.SaveBoolean("isDark", isDark, "f7WBundler");
+        f7ToggleBackColor();
+     }
+    $$(document).on("page:mounted", '.page[data-name="settings"]', () => {
+        $$("[type=checkbox][value=darkmode]").prop("checked", isDark)
+    });
+    const showExportDialog = () => {
+        f7App.dialog.create({
+            title: "Export Path",
+            text: "Destination for bundled apps:",
+            content: `
+        <div class="dialog-input-field item-input">
+            <div class="dialog-input-double input">
+                <input 
+                    type="text" 
+                    class="dialog-input" 
+                    name="export-path" 
+                    placeholder="/sdcard/Droidscript/[Export folder]" 
+                    autofocus 
+                    value="${f7wb.exportPath}" />
+            </div>
+        </div>
+    `,
+            buttons: [{
+                text: "Cancel",
+                keyCodes: [27]
+            }, {
+                text: "OK",
+                bold: true,
+                keyCodes: [13]
+            }],
+            onClick(dialog, index) {
+                const inputValue = dialog.$el.find('.dialog-input').val().trim();
+                if(index === 1) { // OK clicked
+                    if(!inputValue) {
+                        toast("Path cannot be blank.")
+                    } else if(inputValue == "/sdcard/Droidscript/" || inputValue == "/sdcard/Droidscript") {
+                        f7App.dialog.alert("Warning: Exporting to this path may overwrite and minify core project files, risking data loss.", "Unsafe Export Path");
+                    } else if(!inputValue.startsWith("/sdcard/Droidscript/")) {
+                        toast("Path not allowed")
+                    } else {
+                        if(inputValue.startsWith("/sdcard/Droidscript/") && !app.FolderExists(inputValue)) {
+                            app.MakeFolder(inputValue)
+                        }
+                        f7wb.exportPath = inputValue;
+                        app.SaveText("exportPath", inputValue, "f7WBundler");
+                    }
+                }
+            },
+            destroyOnClose: false,
+            closeByBackdropClick: true
+        }).open();
+    }
+    
+    const aboutDialog = () => f7App.dialog.create({
+            title: "About",
+            text: "",
+            content: `
+              <div>F7Wrapper bundler simplifies bundling your <a onclick="app.OpenUrl('https://ds.justplayer.de/projects/f7wrapper')">F7Wrapper</a> apps with just one click, making it seamless for the DroidScript APK Builder to obfuscate your code effortlessly.</div>
+              <div class="margin-top-half">The code is available on <a onclick="app.OpenUrl('https://github.com/JohnPraise247/F7Wrapper-Bundler')">GitHub</a> for contributions. Feel free to reach out with any suggestions or feedback!</div>
+            `,
+            buttons: [ {text: "Ok", bold: true, keyCodes: [13]}],
+        }).open();
+    
+    const toast = (msg) => {
+        //wait for the keyboard to close
+        setTimeout(() => {
+            f7App.toast.create({
+                icon: "<div class='display-flex align-items-center'><i class='md-icons margin-right-half'>info</i><span>" + msg + "</span></div>",
+                closeTimeout: 2000
+            }).open();
+        }, 500)
+    }
+    window.toggleDm = toggleDm;
+    window.aboutDialog = aboutDialog;
+    window.showExportDialog = showExportDialog
+</script>
