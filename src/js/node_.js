@@ -93,20 +93,18 @@ function minifyCSS(cssContent) {
   return result.styles;
 }
 
-// Minify HTML content and extract script tags
+// Minify HTML content and re-inject script tags
 async function processHTML(htmlContent, options = {}) {
   const { removeComments = true, minify = true } = options;
   const scriptRegex = /(<script\b[^>]*>)([\s\S]*?)(<\/script>)/gi;
-  let scripts = [];
   let scriptTags = [];
 
   const htmlWithScriptPlaceholders = await Promise.all(
-    Array.from(htmlContent.matchAll(scriptRegex)).map(async ([match, openTag, scriptContent, closeTag]) => {
+    Array.from(htmlContent.matchAll(scriptRegex)).map(async ([match, openTag, scriptContent, closeTag], index) => {
       const updatedScriptContent = replaceDollarSignsWithDom7(scriptContent);
       const minifiedScript = await minifyJS(updatedScriptContent, { enableMangle: false, removeComments, minify });
       const escapedScript = escapeForTemplateLiteral(minifiedScript);
-      scripts.push(minifiedScript);
-      const placeholder = `__SCRIPT_${scripts.length - 1}__`;
+      const placeholder = `__SCRIPT_${index}__`;
       scriptTags.push(`${openTag}${escapedScript}${closeTag}`);
       return { match, placeholder };
     })
@@ -131,7 +129,7 @@ async function processHTML(htmlContent, options = {}) {
     finalHTML = finalHTML.replace(`__SCRIPT_${index}__`, scriptTag);
   });
 
-  return { html: finalHTML, scripts };
+  return { html: finalHTML };
 }
 
 // Minify HTML content (for panels, no script extraction)
@@ -200,17 +198,12 @@ async function processAddPageAndPanel(jsContent, jsFilePath, ignorePatterns, ign
     try {
       console.log(`Processing page file: ${absPagePath}`);
       let pageContent = await fs.readFile(absPagePath, 'utf8');
-      const { html, scripts } = await processHTML(pageContent, options);
+      const { html } = await processHTML(pageContent, options);
 
       const pageName = path.basename(pagePath, path.extname(pagePath));
       const optionsStr = options && options !== 'null' ? options.slice(1, -1) : '';
       const activePageStr = activePage ? `, ${activePage}` : '';
       const comma = optionsStr ? ', ' : '';
-
-      if (scripts.length > 0) {
-        console.log(`Found ${scripts.length} inline scripts in ${pagePath}`);
-        inlineScripts.push(...scripts);
-      }
 
       return `f7.addPageContent('${pageName}', {${optionsStr}${comma}content: \`${html}\`}${activePageStr})`;
     } catch (err) {
@@ -343,10 +336,9 @@ async function bundleCSSAndJS(jsFilePath, exportPath, options = {}) {
   console.log(`Loading ignore patterns from .bundleignore in ${tPath}`);
   const ignorePatterns = await loadIgnorePatterns(tPath);
   const ignoredFiles = new Set();
-  let inlineScripts = [];
 
   console.log(`Processing f7.addPage and f7.addPanel calls...`);
-  jsContent = await processAddPageAndPanel(jsContent, jsFilePath, ignorePatterns, ignoredFiles, inlineScripts, options);
+  jsContent = await processAddPageAndPanel(jsContent, jsFilePath, ignorePatterns, ignoredFiles, [], options);
 
   const styleRegex = /f7\.style\(['"]([^'"]+)['"]\)/g;
   const scriptRegex = /f7\.script\(['"]([^'"]+)['"]\)/g;
@@ -406,22 +398,14 @@ async function bundleCSSAndJS(jsFilePath, exportPath, options = {}) {
     }
   }
 
-  if (inlineScripts.length > 0) {
-    console.log(`Processing ${inlineScripts.length} inline scripts from HTML pages...`);
-    inlineScripts = inlineScripts.map(script => replaceDollarSignsWithDom7(script));
-    innerExecuteCode.push(...inlineScripts);
-  } else {
-    console.log(`No inline scripts found in HTML pages.`);
-  }
-
   const outputFilePath = path.join(exportPath, path.basename(jsFilePath));
   
-  if (allMatches.length === 0 && inlineScripts.length === 0) {
-    console.log(`No f7.style, f7.script, or inline scripts to bundle. Writing original content to ${outputFilePath}`);
+  if (allMatches.length === 0) {
+    console.log(`No f7.style or f7.script calls to bundle. Writing original content to ${outputFilePath}`);
     await fs.mkdir(exportPath, { recursive: true });
     await fs.writeFile(outputFilePath, jsContent);
   } else {
-    console.log(`Bundling ${allMatches.length} f7.style/f7.script calls and ${inlineScripts.length} inline scripts...`);
+    console.log(`Bundling ${allMatches.length} f7.style/f7.script calls...`);
     allMatches.sort((a, b) => a.index - b.index);
     for (let i = allMatches.length - 1; i >= 0; i--) {
       const { index, length } = allMatches[i];
@@ -463,7 +447,7 @@ const waitForDom7 = setInterval(() => {
 
   console.log(`Calculating size of export directory ${exportPath}...`);
   const exportDirSize = await getDirectorySize(exportPath);
-  console.log(`Bundling complete!`);
+  console.log(`Bundling complete! Export directory size: ${exportDirSize} bytes`);
   parent.SendMessage(`bundleDone::${exportDirSize}`);
 }
 

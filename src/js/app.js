@@ -3,7 +3,7 @@ const f7wb = {
     nodeReady:false,
     domAppList: "",
     appNum: 0,
-    exportPath: app.LoadText("exportPath", "/sdcard/Droidscript/F7Wrapper_Export", "f7WBundler"),
+    exportPath: app.LoadText("exportPath", "/sdcard/Droidscript/F7WB_Export", "f7WBundler"),
     isBundling: false
 }
 
